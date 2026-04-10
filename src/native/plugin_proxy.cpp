@@ -50,7 +50,8 @@ tresult PLUGIN_API PluginProxy::queryInterface(
     if (!obj) return kInvalidArgument;
     *obj = nullptr;
 
-    FUID requested(_iid);
+    FUID requested;
+    requested.fromTUID(_iid);
 
     if (requested == FUnknown::iid      ||
         requested == IPluginBase::iid   ||
@@ -116,16 +117,14 @@ tresult PLUGIN_API PluginProxy::terminate() {
 // IComponent
 // ============================================================================
 
-tresult PLUGIN_API PluginProxy::getControllerClassId(FUID* classId) {
-    if (!classId) return kInvalidArgument;
-
+tresult PLUGIN_API PluginProxy::getControllerClassId(TUID classId) {
     MsgRequestGetControllerClassId req{};
     MsgResponseGetControllerClassId resp{};
     if (!sendRequest(MsgType::GetControllerClassId, req, resp)) {
         return kInternalError;
     }
     if (resp.success) {
-        *classId = FUID(resp.classId);
+        memcpy(classId, resp.classId, sizeof(TUID));
     }
     return resp.success ? kResultOk : kResultFalse;
 }
@@ -181,13 +180,13 @@ tresult PLUGIN_API PluginProxy::getRoutingInfo(
 
 tresult PLUGIN_API PluginProxy::activateBus(
         MediaType type, BusDirection dir,
-        int32 index, bool state)
+        int32 index, TBool state)
 {
     MsgRequestActivateBus req{};
     req.media_type = static_cast<int32_t>(type);
     req.direction  = static_cast<int32_t>(dir);
     req.index      = index;
-    req.state      = state;
+    req.state      = state != 0;
 
     MsgResponseActivateBus resp{};
     if (!sendRequest(MsgType::ActivateBus, req, resp)) {
@@ -196,9 +195,9 @@ tresult PLUGIN_API PluginProxy::activateBus(
     return static_cast<tresult>(resp.result);
 }
 
-tresult PLUGIN_API PluginProxy::setActive(bool state) {
+tresult PLUGIN_API PluginProxy::setActive(TBool state) {
     MsgRequestSetActive req{};
-    req.state = state;
+    req.state = state != 0;
 
     MsgResponseSetActive resp{};
     if (!sendRequest(MsgType::SetActive, req, resp)) {
@@ -216,7 +215,7 @@ tresult PLUGIN_API PluginProxy::setState(IBStream* stream) {
     std::vector<uint8_t> data;
     uint8_t  buf[4096];
     int32    bytesRead = 0;
-    tresult  seekRes   = stream->seek(0, kIBSeekSet, nullptr);
+    tresult  seekRes   = stream->seek(0, Steinberg::IBStream::kIBSeekSet, nullptr);
     (void)seekRes;
 
     while (true) {
@@ -365,9 +364,9 @@ tresult PLUGIN_API PluginProxy::setupProcessing(ProcessSetup& setup) {
     return static_cast<tresult>(resp.result);
 }
 
-tresult PLUGIN_API PluginProxy::setProcessing(bool state) {
+tresult PLUGIN_API PluginProxy::setProcessing(TBool state) {
     MsgRequestSetProcessing req{};
-    req.state = state;
+    req.state = state != 0;
 
     MsgResponseSetProcessing resp{};
     if (!sendRequest(MsgType::SetProcessing, req, resp)) {
@@ -521,7 +520,7 @@ tresult PLUGIN_API PluginProxy::setComponentState(IBStream* state) {
 
     std::vector<uint8_t> data;
     uint8_t buf[4096];
-    state->seek(0, kIBSeekSet, nullptr);
+    state->seek(0, Steinberg::IBStream::kIBSeekSet, nullptr);
     while (true) {
         int32 read = 0;
         tresult r = state->read(buf, sizeof(buf), &read);
@@ -568,14 +567,14 @@ tresult PLUGIN_API PluginProxy::getParameterInfo(
 }
 
 tresult PLUGIN_API PluginProxy::getParamStringByValue(
-        uint32 /*id*/, double /*valueNormalized*/, char16* /*string*/)
+        uint32 /*id*/, double /*valueNormalized*/, String128 /*string*/)
 {
     // Not yet forwarded — DAW will fall back to numeric display.
     return kNotImplemented;
 }
 
 tresult PLUGIN_API PluginProxy::getParamValueByString(
-        uint32 /*id*/, char16* /*string*/, double& /*valueNormalized*/)
+        uint32 /*id*/, String128 /*string*/, double& /*valueNormalized*/)
 {
     return kNotImplemented;
 }
@@ -597,6 +596,16 @@ tresult PLUGIN_API PluginProxy::setParamNormalized(uint32 id, double value) {
     MsgResponseSetParamNormalized resp{};
     if (!sendRequest(MsgType::SetParamNormalized, req, resp)) return kInternalError;
     return static_cast<tresult>(resp.result);
+}
+
+Steinberg::Vst::ParamValue PLUGIN_API PluginProxy::normalizedParamToPlain (Steinberg::Vst::ParamID id, Steinberg::Vst::ParamValue valueNormalized)
+{
+    return valueNormalized;
+}
+
+Steinberg::Vst::ParamValue PLUGIN_API PluginProxy::plainParamToNormalized (Steinberg::Vst::ParamID id, Steinberg::Vst::ParamValue plainValue)
+{
+    return plainValue;
 }
 
 tresult PLUGIN_API PluginProxy::setComponentHandler(IComponentHandler* handler) {

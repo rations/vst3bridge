@@ -27,6 +27,8 @@
 #include <atomic>
 #include <memory>
 
+using namespace Steinberg;
+
 namespace vst3bridge {
 
 /**
@@ -48,20 +50,17 @@ public:
     // IPluginFactory implementation
     Steinberg::tresult PLUGIN_API getFactoryInfo(Steinberg::PFactoryInfo* info) override;
     Steinberg::int32 PLUGIN_API countClasses() override;
-    Steinberg::tresult PLUGIN_API getClassInfo(Steinberg::int32 index, 
-                                               Steinberg::PClassInfo* info) override;
-    Steinberg::tresult PLUGIN_API createInstance(Steinberg::TUID cid, 
-                                                 Steinberg::TUID _iid, 
-                                                 void** obj) override;
-
-    // IPluginFactory2 implementation
-    Steinberg::tresult PLUGIN_API getClassInfo2(Steinberg::int32 index, 
-                                                Steinberg::PClassInfo2* info) override;
+    tresult PLUGIN_API getClassInfo(int32 index,
+                                  PClassInfo* info) override;
+    tresult PLUGIN_API getClassInfo2(int32 index,
+                                      PClassInfo2* info) override;
 
     // IPluginFactory3 implementation
-    Steinberg::tresult PLUGIN_API getClassInfoUnicode(Steinberg::int32 index, 
-                                                      Steinberg::PClassInfoW* info) override;
-    Steinberg::tresult PLUGIN_API setHostContext(Steinberg::FUnknown* context) override;
+    tresult PLUGIN_API getClassInfoUnicode(int32 index,
+                                            PClassInfoW* info) override;
+
+    Steinberg::tresult PLUGIN_API createInstance (Steinberg::FIDString cid, Steinberg::FIDString _iid, void** obj) override;
+    tresult PLUGIN_API setHostContext(FUnknown* context) override;
 
     // FUnknown implementation
     Steinberg::tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid, 

@@ -28,6 +28,16 @@ namespace vst3bridge {
 
 using namespace Steinberg;
 
+// Helper function to convert FIDString to TUID
+static void stringToTUID(const char* str, TUID& tuid) {
+    for (int i = 0; i < 16; ++i) {
+        unsigned int byte = 0;
+        if (sscanf(str + i * 2, "%2x", &byte) == 1) {
+            tuid[i] = static_cast<int8>(byte);
+        }
+    }
+}
+
 PluginFactory::PluginFactory(std::shared_ptr<MessageSocket> socket)
     : socket_(socket) {
 }
@@ -95,13 +105,13 @@ tresult PLUGIN_API PluginFactory::getClassInfo(int32 index, PClassInfo* info) {
     return kInvalidArgument;
 }
 
-tresult PLUGIN_API PluginFactory::createInstance(TUID cid, TUID _iid, void** obj) {
+tresult PLUGIN_API PluginFactory::createInstance(FIDString cid, FIDString _iid, void** obj) {
     if (!obj) return kInvalidArgument;
     *obj = nullptr;
 
     MsgRequestCreateInstance request;
-    std::memcpy(request.cid, cid, sizeof(TUID));
-    std::memcpy(request.iid, _iid, sizeof(TUID));
+    std::memcpy(request.cid, cid, sizeof(request.cid));
+    std::memcpy(request.iid, _iid, sizeof(request.iid));
 
     if (!socket_->sendMessage(MsgType::CreateInstance,
                               &request, sizeof(request))) {
@@ -122,8 +132,10 @@ tresult PLUGIN_API PluginFactory::createInstance(TUID cid, TUID _iid, void** obj
     auto proxy = std::make_unique<PluginProxy>(socket_, response.instance_id);
 
     // Query for requested interface
-    tresult result = proxy->queryInterface(_iid, obj);
-    if (resultOk(result)) {
+    TUID iid;
+    stringToTUID(_iid, iid);
+    tresult result = proxy->queryInterface(iid, obj);
+    if (result == kResultOk) {
         // Object is referenced, release our local reference
         proxy.release();
     }
@@ -209,7 +221,7 @@ tresult PLUGIN_API PluginFactory::queryInterface(const TUID _iid, void** obj) {
     if (!obj) return kInvalidArgument;
     *obj = nullptr;
 
-    FUID requested(_iid);
+    FUID requested = FUID::fromTUID(_iid);
 
     if (requested == IPluginFactory::iid || requested == FUnknown::iid) {
         *obj = static_cast<IPluginFactory*>(this);

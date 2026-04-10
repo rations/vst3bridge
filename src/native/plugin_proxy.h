@@ -36,13 +36,21 @@
 
 #pragma once
 
+#include "pluginterfaces/base/fplatform.h"
+#include "pluginterfaces/base/fstrdefs.h"
+#include "pluginterfaces/base/funknown.h"
 #include "pluginterfaces/base/ipluginbase.h"
+#include "pluginterfaces/base/ibstream.h"
+#include "pluginterfaces/vst/vsttypes.h"
 #include "pluginterfaces/vst/ivstcomponent.h"
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
+#include "pluginterfaces/vst/ivstparameterchanges.h"
 #include "pluginterfaces/gui/iplugview.h"
 #include "protocol.h"
 #include "socket.h"
+
+using namespace Steinberg;
 #include "shared_memory.h"
 #include <atomic>
 #include <memory>
@@ -60,9 +68,9 @@ class PlugViewProxy;
  * Created by PluginFactory when the DAW calls IPluginFactory::createInstance().
  * Destroyed when the DAW releases its last reference.
  */
-class PluginProxy : public Steinberg::IComponent,
-                     public Steinberg::IAudioProcessor,
-                     public Steinberg::IEditController
+class PluginProxy : public Steinberg::Vst::IComponent,
+                      public Steinberg::Vst::IAudioProcessor,
+                      public Steinberg::Vst::IEditController
 {
 public:
     /**
@@ -71,7 +79,7 @@ public:
      * @param instance_id  Instance ID assigned by the Wine host.
      */
     PluginProxy(std::shared_ptr<MessageSocket> socket, uint64_t instance_id);
-    ~PluginProxy() override;
+    virtual ~PluginProxy();
 
     // Non-copyable and non-movable (managed by raw pointers via COM ref-count)
     PluginProxy(const PluginProxy&) = delete;
@@ -92,44 +100,44 @@ public:
     // ---- IComponent ---------------------------------------------------------
 
     Steinberg::tresult PLUGIN_API getControllerClassId(
-            Steinberg::FUID* classId) override;
-    Steinberg::tresult PLUGIN_API setIoMode(Steinberg::IoMode mode) override;
+            Steinberg::TUID classId) override;
+    Steinberg::tresult PLUGIN_API setIoMode(Steinberg::Vst::IoMode mode) override;
     Steinberg::int32   PLUGIN_API getBusCount(
-            Steinberg::MediaType type,
-            Steinberg::BusDirection dir) override;
+            Steinberg::Vst::MediaType type,
+            Steinberg::Vst::BusDirection dir) override;
     Steinberg::tresult PLUGIN_API getBusInfo(
-            Steinberg::MediaType type,
-            Steinberg::BusDirection dir,
+            Steinberg::Vst::MediaType type,
+            Steinberg::Vst::BusDirection dir,
             Steinberg::int32  index,
-            Steinberg::BusInfo& bus) override;
+            Steinberg::Vst::BusInfo& bus) override;
     Steinberg::tresult PLUGIN_API getRoutingInfo(
-            Steinberg::RoutingInfo& inInfo,
-            Steinberg::RoutingInfo& outInfo) override;
+            Steinberg::Vst::RoutingInfo& inInfo,
+            Steinberg::Vst::RoutingInfo& outInfo) override;
     Steinberg::tresult PLUGIN_API activateBus(
-            Steinberg::MediaType type,
-            Steinberg::BusDirection dir,
+            Steinberg::Vst::MediaType type,
+            Steinberg::Vst::BusDirection dir,
             Steinberg::int32 index,
-            bool state) override;
-    Steinberg::tresult PLUGIN_API setActive(bool state) override;
+            Steinberg::TBool state) override;
+    Steinberg::tresult PLUGIN_API setActive(Steinberg::TBool state) override;
     Steinberg::tresult PLUGIN_API setState(Steinberg::IBStream* state) override;
     Steinberg::tresult PLUGIN_API getState(Steinberg::IBStream* state) override;
 
     // ---- IAudioProcessor ----------------------------------------------------
 
     Steinberg::tresult PLUGIN_API setBusArrangements(
-            Steinberg::SpeakerArrangement* inputs,  Steinberg::int32 numIns,
-            Steinberg::SpeakerArrangement* outputs, Steinberg::int32 numOuts) override;
+            Steinberg::Vst::SpeakerArrangement* inputs,  Steinberg::int32 numIns,
+            Steinberg::Vst::SpeakerArrangement* outputs, Steinberg::int32 numOuts) override;
     Steinberg::tresult PLUGIN_API getBusArrangement(
-            Steinberg::BusDirection dir,
+            Steinberg::Vst::BusDirection dir,
             Steinberg::int32 busIndex,
-            Steinberg::SpeakerArrangement& arr) override;
+            Steinberg::Vst::SpeakerArrangement& arr) override;
     Steinberg::tresult PLUGIN_API canProcessSampleSize(
             Steinberg::int32 symbolicSampleSize) override;
     Steinberg::uint32  PLUGIN_API getLatencySamples() override;
     Steinberg::tresult PLUGIN_API setupProcessing(
-            Steinberg::ProcessSetup& setup) override;
-    Steinberg::tresult PLUGIN_API setProcessing(bool state) override;
-    Steinberg::tresult PLUGIN_API process(Steinberg::ProcessData& data) override;
+            Steinberg::Vst::ProcessSetup& setup) override;
+    Steinberg::tresult PLUGIN_API setProcessing(Steinberg::TBool state) override;
+    Steinberg::tresult PLUGIN_API process(Steinberg::Vst::ProcessData& data) override;
     Steinberg::uint32  PLUGIN_API getTailSamples() override;
 
     // ---- IEditController ----------------------------------------------------
@@ -139,20 +147,22 @@ public:
     Steinberg::int32   PLUGIN_API getParameterCount() override;
     Steinberg::tresult PLUGIN_API getParameterInfo(
             Steinberg::int32 paramIndex,
-            Steinberg::ParameterInfo& info) override;
+            Steinberg::Vst::ParameterInfo& info) override;
     Steinberg::tresult PLUGIN_API getParamStringByValue(
             Steinberg::uint32 id,
             double valueNormalized,
-            Steinberg::char16* string) override;
-    Steinberg::tresult PLUGIN_API getParamValueByString(
-            Steinberg::uint32 id,
-            Steinberg::char16* string,
+            Steinberg::Vst::String128 string) override;
+            Steinberg::tresult PLUGIN_API getParamValueByString (Steinberg::uint32 id,
+                                                                 Steinberg::Vst::TChar* string,
             double& valueNormalized) override;
+    Steinberg::Vst::ParamValue PLUGIN_API normalizedParamToPlain (Steinberg::Vst::ParamID id, Steinberg::Vst::ParamValue valueNormalized) override;
+    Steinberg::Vst::ParamValue PLUGIN_API plainParamToNormalized (Steinberg::Vst::ParamID id, Steinberg::Vst::ParamValue plainValue) override;
+
     double             PLUGIN_API getParamNormalized(Steinberg::uint32 id) override;
     Steinberg::tresult PLUGIN_API setParamNormalized(
             Steinberg::uint32 id, double value) override;
     Steinberg::tresult PLUGIN_API setComponentHandler(
-            Steinberg::IComponentHandler* handler) override;
+            Steinberg::Vst::IComponentHandler* handler) override;
     Steinberg::IPlugView* PLUGIN_API createView(Steinberg::FIDString name) override;
 
     // ---- Bridge-internal ----------------------------------------------------
@@ -229,7 +239,7 @@ private:
     std::atomic<Steinberg::uint32>   ref_count_{1};
 
     /// DAW-provided IComponentHandler; called when Wine host reports GUI edits
-    Steinberg::IComponentHandler*    component_handler_ = nullptr;
+    Steinberg::Vst::IComponentHandler*    component_handler_ = nullptr;
     std::mutex                       handler_mutex_;
 
     /// Audio shared memory (opened after AudioReady message)

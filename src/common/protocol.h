@@ -43,6 +43,9 @@
 #include "pluginterfaces/vst/ivsteditcontroller.h"
 #include "pluginterfaces/gui/iplugview.h"
 
+using namespace Steinberg;
+using namespace Steinberg::Vst;
+
 namespace vst3bridge {
 
 // ============================================================================
@@ -254,7 +257,7 @@ struct MsgResponseHandshake {
 struct MsgRequestFactoryInfo {};
 
 struct MsgResponseFactoryInfo {
-    Steinberg::PFactoryInfo info;
+    PFactoryInfo info;
 };
 
 struct MsgRequestClassCount {};
@@ -269,7 +272,7 @@ struct MsgRequestClassInfo {
 
 struct MsgResponseClassInfo {
     bool success;
-    Steinberg::PClassInfo info;
+    PClassInfo info;
 };
 
 struct MsgRequestClassInfo2 {
@@ -278,7 +281,7 @@ struct MsgRequestClassInfo2 {
 
 struct MsgResponseClassInfo2 {
     bool success;
-    Steinberg::PClassInfo2 info;
+    PClassInfo2 info;
 };
 
 struct MsgRequestClassInfoW {
@@ -287,12 +290,12 @@ struct MsgRequestClassInfoW {
 
 struct MsgResponseClassInfoW {
     bool success;
-    Steinberg::PClassInfoW info;
+    PClassInfoW info;
 };
 
 struct MsgRequestCreateInstance {
-    Steinberg::TUID cid;   ///< Class ID to instantiate
-    Steinberg::TUID iid;   ///< Interface ID to return
+    char cid[37];   ///< Class ID as hex string
+    char iid[37];   ///< Interface ID as hex string
 };
 
 struct MsgResponseCreateInstance {
@@ -332,7 +335,7 @@ struct MsgRequestGetControllerClassId {};
 
 struct MsgResponseGetControllerClassId {
     bool           success;
-    Steinberg::TUID classId;
+    TUID classId;
 };
 
 struct MsgRequestSetIoMode {
@@ -360,7 +363,7 @@ struct MsgRequestGetBusInfo {
 
 struct MsgResponseGetBusInfo {
     int32_t           result;
-    Steinberg::BusInfo info;
+    BusInfo info;
 };
 
 struct MsgRequestActivateBus {
@@ -456,7 +459,7 @@ struct MsgResponseGetLatencySamples {
 };
 
 struct MsgRequestSetupProcessing {
-    Steinberg::ProcessSetup setup;
+    ProcessSetup setup;
 };
 
 struct MsgResponseSetupProcessing {
@@ -548,7 +551,7 @@ struct MsgRequestGetParameterInfo {
 
 struct MsgResponseGetParameterInfo {
     int32_t result;
-    Steinberg::ParameterInfo info;
+    ParameterInfo info;
 };
 
 struct MsgRequestGetParamNormalized {
@@ -633,12 +636,12 @@ struct MsgRequestViewGetSize {
 
 struct MsgResponseViewGetSize {
     int32_t             result;
-    Steinberg::ViewRect rect;
+    ViewRect rect;
 };
 
 struct MsgRequestViewOnSize {
     uint64_t            view_id;
-    Steinberg::ViewRect rect;
+    ViewRect rect;
 };
 
 struct MsgResponseViewOnSize {
