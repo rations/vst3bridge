@@ -561,7 +561,7 @@ private:
         Steinberg::tresult res = Steinberg::kInternalError;
         if (pluginInstance_) {
             res = pluginInstance_->setIoMode(
-                static_cast<Steinberg::IoMode>(req.mode));
+                static_cast<Steinberg::Vst::IoMode>(req.mode));
         }
         MsgResponseSetIoMode resp{};
         resp.result = static_cast<int32_t>(res);
@@ -572,8 +572,8 @@ private:
         MsgResponseGetBusCount resp{};
         if (pluginInstance_) {
             resp.count = pluginInstance_->getBusCount(
-                static_cast<Steinberg::MediaType>(req.media_type),
-                static_cast<Steinberg::BusDirection>(req.direction));
+                static_cast<Steinberg::Vst::MediaType>(req.media_type),
+                static_cast<Steinberg::Vst::BusDirection>(req.direction));
         }
         return socket_.sendMessage(MsgType::ResponseGetBusCount, &resp, sizeof(resp));
     }
@@ -583,8 +583,8 @@ private:
         if (pluginInstance_) {
             resp.result = static_cast<int32_t>(
                 pluginInstance_->getBusInfo(
-                    static_cast<Steinberg::MediaType>(req.media_type),
-                    static_cast<Steinberg::BusDirection>(req.direction),
+                    static_cast<Steinberg::Vst::MediaType>(req.media_type),
+                    static_cast<Steinberg::Vst::BusDirection>(req.direction),
                     req.index,
                     resp.info));
         }
@@ -595,8 +595,8 @@ private:
         Steinberg::tresult res = Steinberg::kInternalError;
         if (pluginInstance_) {
             res = pluginInstance_->activateBus(
-                static_cast<Steinberg::MediaType>(req.media_type),
-                static_cast<Steinberg::BusDirection>(req.direction),
+                static_cast<Steinberg::Vst::MediaType>(req.media_type),
+                static_cast<Steinberg::Vst::BusDirection>(req.direction),
                 req.index, req.state);
         }
         MsgResponseActivateBus resp{};
@@ -684,10 +684,10 @@ private:
     bool handleGetBusArrangement(const MsgRequestGetBusArrangement& req) {
         MsgResponseGetBusArrangement resp{};
         if (pluginInstance_) {
-            Steinberg::SpeakerArrangement arr = 0;
+            Steinberg::Vst::SpeakerArrangement arr = 0;
             resp.result = static_cast<int32_t>(
                 pluginInstance_->getBusArrangement(
-                    static_cast<Steinberg::BusDirection>(req.direction),
+                    static_cast<Steinberg::Vst::BusDirection>(req.direction),
                     req.bus_index, arr));
             resp.arrangement = arr;
         }
@@ -719,7 +719,7 @@ private:
         Steinberg::tresult res = Steinberg::kInternalError;
         if (pluginInstance_) {
             // Need a non-const copy because setupProcessing takes a reference
-            Steinberg::ProcessSetup setup = req.setup;
+            Steinberg::Vst::ProcessSetup setup = req.setup;
             res = pluginInstance_->setupProcessing(setup);
 
             if (res == Steinberg::kResultOk) {
@@ -748,14 +748,14 @@ private:
                             Steinberg::kAudio, Steinberg::kOutput));
 
                     for (uint32_t i = 0; i < ready.input_bus_count && i < 8; ++i) {
-                        Steinberg::SpeakerArrangement arr = 0;
+                        Steinberg::Vst::SpeakerArrangement arr = 0;
                         pluginInstance_->getBusArrangement(
                             Steinberg::kInput, i, arr);
                         ready.input_bus_channels[i] = static_cast<uint32_t>(
                             Steinberg::SpeakerArr::getChannelCount(arr));
                     }
                     for (uint32_t i = 0; i < ready.output_bus_count && i < 8; ++i) {
-                        Steinberg::SpeakerArrangement arr = 0;
+                        Steinberg::Vst::SpeakerArrangement arr = 0;
                         pluginInstance_->getBusArrangement(
                             Steinberg::kOutput, i, arr);
                         ready.output_bus_channels[i] = static_cast<uint32_t>(
@@ -853,7 +853,7 @@ private:
             outputBuses_[b].channelBuffers32 = outputPtrs_[b].data();
         }
 
-        Steinberg::ProcessData data{};
+        Steinberg::Vst::ProcessData data{};
         data.processMode            = Steinberg::kRealtime;
         data.symbolicSampleSize     = Steinberg::kSample32;
         data.numSamples             = static_cast<Steinberg::int32>(numSamples);

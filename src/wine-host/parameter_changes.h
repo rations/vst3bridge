@@ -29,7 +29,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
-#include "../vst3-sdk/iparameterchanges.h"
+#include "pluginterfaces/vst/ivstparameterchanges.h"
 
 namespace vst3bridge {
 

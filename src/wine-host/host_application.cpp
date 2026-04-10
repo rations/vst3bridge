@@ -60,10 +60,10 @@ Steinberg::tresult PLUGIN_API HostApplication::queryInterface(
     Steinberg::FUID requested(_iid);
 
     if (requested == Steinberg::FUnknown::iid ||
-        requested == Steinberg::IHostApplication::iid ||
+        requested == Steinberg::Vst::IVstHostApplication::iid ||
         requested == HostApplication::iid)
     {
-        *obj = static_cast<Steinberg::IHostApplication*>(this);
+        *obj = static_cast<Steinberg::Vst::IVstHostApplication*>(this);
         addRef();
         return Steinberg::kResultOk;
     }

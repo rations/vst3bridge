@@ -21,14 +21,14 @@
 #pragma once
 
 #include "pluginterfaces/base/funknown.h"
-#include "pluginterfaces/vst/ihostapplication.h"
+#include "pluginterfaces/vst/ivsthostapplication.h"
 
 namespace vst3bridge {
 
 /**
  * @brief Concrete IHostApplication for the VST3 Bridge Wine host.
  */
-class HostApplication final : public Steinberg::IHostApplication {
+class HostApplication final : public Steinberg::Vst::IVstHostApplication {
 public:
     HostApplication();
 

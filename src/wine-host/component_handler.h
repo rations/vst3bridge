@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "vst3sdk.h"
+
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -44,7 +44,7 @@ namespace vst3bridge { class WineSocketClient; }
  * IEditController via setComponentHandler().  It remains alive for the
  * lifetime of the plugin instance.
  */
-class ComponentHandler final : public Steinberg::IComponentHandler {
+class ComponentHandler final : public Steinberg::Vst::IComponentHandler {
 public:
     /**
      * @param socket  Socket used to send messages to the native side.

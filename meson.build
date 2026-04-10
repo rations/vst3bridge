@@ -49,7 +49,11 @@ endif
 # Include directories
 # ---------------------------------------------------------------------------
 
-inc_common  = include_directories('src/common', 'third_party/vst3sdk')
+inc_common  = include_directories('src/common',
+    'third_party/vst3sdk',
+    'third_party/vst3sdk/pluginterfaces',
+    'third_party/vst3sdk/base',
+    'third_party/vst3sdk/public.sdk')
 inc_native  = include_directories('src/native')
 inc_wine    = include_directories('src/wine-host')
 
@@ -63,6 +67,14 @@ common_sources = files(
     'src/common/gui_events.cpp',
     'src/common/stream.cpp',
     'src/common/protocol.cpp',
+    'third_party/vst3sdk/base/source/fobject.cpp',
+    'third_party/vst3sdk/base/source/fstring.cpp',
+    'third_party/vst3sdk/base/source/baseiids.cpp',
+    'third_party/vst3sdk/base/source/fdebug.cpp',
+    'third_party/vst3sdk/pluginterfaces/base/funknown.cpp',
+    'third_party/vst3sdk/pluginterfaces/base/coreiids.cpp',
+    'third_party/vst3sdk/public.sdk/source/common/commoniids.cpp',
+    'third_party/vst3sdk/public.sdk/source/vst/vstinitiids.cpp',
 )
 
 # ---------------------------------------------------------------------------
@@ -85,6 +97,10 @@ native_sources = files(
 native_cpp_args = common_cpp_args + [
     '-DBUILDING_NATIVE',
     '-DSMTG_OS_LINUX',
+    '-DSMTG_PLATFORM_64',
+    '-DRELEASE',
+    '-DVST_VERSION=0x030700',
+    '-DSMTG_DEFINE_IID',
 ]
 
 # Native library dependencies
@@ -148,8 +164,17 @@ if winegpp.found()
 
     wine_host_exe = custom_target('vst3bridge-host',
         output   : 'vst3bridge-host.exe',
-        input    : all_wine_sources,
-        command  : [winegpp, '@INPUT@', '-o', '@OUTPUT@', '-std=c++17', '-I/home/rations/vst3bridge/src/common', '-I/home/rations/vst3bridge/third_party/vst3sdk', '-I/home/rations/vst3bridge/src/wine-host', '-fvisibility=hidden', '-fvisibility-inlines-hidden', '-fno-strict-aliasing', '-msse2', '-DNDEBUG', '-DBUILDING_WINE_HOST', '-DSMTG_OS_WINDOWS', '-DNOMINMAX', '-D_WIN32_WINNT=0x0601', '-Wno-unknown-pragmas', '-Wno-pedantic', '-mwindows', '-lstdc++', '-lm', '-lws2_32', '-lgdi32', '-luser32', '-lkernel32', '-luuid', '-lole32', '-lshell32', '-lrt'],
+        input    : all_wine_sources + files(
+            'third_party/vst3sdk/base/source/fobject.cpp',
+            'third_party/vst3sdk/base/source/fstring.cpp',
+            'third_party/vst3sdk/base/source/baseiids.cpp',
+            'third_party/vst3sdk/base/source/fdebug.cpp',
+            'third_party/vst3sdk/pluginterfaces/base/funknown.cpp',
+            'third_party/vst3sdk/pluginterfaces/base/coreiids.cpp',
+            'third_party/vst3sdk/public.sdk/source/common/commoniids.cpp',
+            'third_party/vst3sdk/public.sdk/source/vst/vstinitiids.cpp',
+        ),
+        command  : [winegpp, '@INPUT@', '-o', '@OUTPUT@', '-std=c++17', '-I/home/rations/vst3bridge/src/common', '-I/home/rations/vst3bridge/third_party/vst3sdk', '-I/home/rations/vst3bridge/third_party/vst3sdk/pluginterfaces', '-I/home/rations/vst3bridge/third_party/vst3sdk/base', '-I/home/rations/vst3bridge/third_party/vst3sdk/public.sdk', '-I/home/rations/vst3bridge/src/wine-host', '-fvisibility=hidden', '-fvisibility-inlines-hidden', '-fno-strict-aliasing', '-msse2', '-DNDEBUG', '-DBUILDING_WINE_HOST', '-DSMTG_OS_WINDOWS', '-DSMTG_PLATFORM_64', '-DVST_VERSION=0x030700', '-DNOMINMAX', '-D_WIN32_WINNT=0x0601', '-DSMTG_DEFINE_IID', '-Wno-unknown-pragmas', '-Wno-pedantic', '-Wno-error=format', '-Wno-error=class-memaccess', '-mwindows', '-lstdc++', '-lm', '-lws2_32', '-lgdi32', '-luser32', '-lkernel32', '-luuid', '-lole32', '-lshell32', '-lrt'],
         build_by_default : true,
         install  : false,
     )

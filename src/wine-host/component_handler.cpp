@@ -49,10 +49,10 @@ Steinberg::tresult PLUGIN_API ComponentHandler::queryInterface(
     const Steinberg::FUID requested(_iid);
 
     if (requested == Steinberg::FUnknown::iid ||
-        requested == Steinberg::IComponentHandler::iid ||
+        requested == Steinberg::Vst::IComponentHandler::iid ||
         requested == ComponentHandler::iid)
     {
-        *obj = static_cast<Steinberg::IComponentHandler*>(this);
+        *obj = static_cast<Steinberg::Vst::IComponentHandler*>(this);
         addRef();
         return Steinberg::kResultOk;
     }

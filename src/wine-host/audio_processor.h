@@ -118,7 +118,7 @@ private:
     std::atomic<bool> stop_requested_{false};
 
     // VST3 processing data
-    Steinberg::ProcessData process_data_;
+    Steinberg::Vst::ProcessData process_data_;
     std::vector<Steinberg::AudioBusBuffers> input_buses_;
     std::vector<Steinberg::AudioBusBuffers> output_buses_;
     std::vector<std::vector<float*>> input_channel_ptrs_;

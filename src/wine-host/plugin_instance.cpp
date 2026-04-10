@@ -78,7 +78,7 @@ PluginInstance::~PluginInstance() {
 std::unique_ptr<PluginInstance> PluginInstance::create(
         Steinberg::IPluginFactory*   factory,
         const Steinberg::TUID        cid,
-        Steinberg::IHostApplication* hostApp)
+        Steinberg::Vst::IVstHostApplication* hostApp)
 {
     if (!factory) {
         LOG_ERROR("PluginInstance::create(): factory is null");
@@ -189,7 +189,7 @@ std::unique_ptr<PluginInstance> PluginInstance::create(
 // IPluginBase
 // ============================================================================
 
-Steinberg::tresult PluginInstance::initialize(Steinberg::IHostApplication* hostApp)
+Steinberg::tresult PluginInstance::initialize(Steinberg::Vst::IVstHostApplication* hostApp)
 {
     if (!component_) return Steinberg::kInternalError;
 
@@ -226,29 +226,29 @@ Steinberg::tresult PluginInstance::getControllerClassId(Steinberg::FUID& classId
     return component_->getControllerClassId(&classId);
 }
 
-Steinberg::tresult PluginInstance::setIoMode(Steinberg::IoMode mode)
+Steinberg::tresult PluginInstance::setIoMode(Steinberg::Vst::IoMode mode)
 {
     if (!component_) return Steinberg::kInternalError;
     return component_->setIoMode(mode);
 }
 
 Steinberg::int32 PluginInstance::getBusCount(
-        Steinberg::MediaType type, Steinberg::BusDirection dir)
+        Steinberg::Vst::MediaType type, Steinberg::Vst::BusDirection dir)
 {
     if (!component_) return 0;
     return component_->getBusCount(type, dir);
 }
 
 Steinberg::tresult PluginInstance::getBusInfo(
-        Steinberg::MediaType type, Steinberg::BusDirection dir,
-        Steinberg::int32 index, Steinberg::BusInfo& bus)
+        Steinberg::Vst::MediaType type, Steinberg::Vst::BusDirection dir,
+        Steinberg::int32 index, Steinberg::Vst::BusInfo& bus)
 {
     if (!component_) return Steinberg::kInternalError;
     return component_->getBusInfo(type, dir, index, bus);
 }
 
 Steinberg::tresult PluginInstance::activateBus(
-        Steinberg::MediaType type, Steinberg::BusDirection dir,
+        Steinberg::Vst::MediaType type, Steinberg::Vst::BusDirection dir,
         Steinberg::int32 index, bool state)
 {
     if (!component_) return Steinberg::kInternalError;
@@ -309,15 +309,15 @@ Steinberg::tresult PluginInstance::setBusArrangements(
     if (msg.num_ins > 8 || msg.num_outs > 8) return Steinberg::kInvalidArgument;
 
     return audioProc_->setBusArrangements(
-        const_cast<Steinberg::SpeakerArrangement*>(msg.in_arr),
+        const_cast<Steinberg::Vst::SpeakerArrangement*>(msg.in_arr),
         msg.num_ins,
-        const_cast<Steinberg::SpeakerArrangement*>(msg.out_arr),
+        const_cast<Steinberg::Vst::SpeakerArrangement*>(msg.out_arr),
         msg.num_outs);
 }
 
 Steinberg::tresult PluginInstance::getBusArrangement(
-        Steinberg::BusDirection dir, Steinberg::int32 busIndex,
-        Steinberg::SpeakerArrangement& arr)
+        Steinberg::Vst::BusDirection dir, Steinberg::int32 busIndex,
+        Steinberg::Vst::SpeakerArrangement& arr)
 {
     if (!audioProc_) return Steinberg::kNotImplemented;
     return audioProc_->getBusArrangement(dir, busIndex, arr);
@@ -335,7 +335,7 @@ Steinberg::uint32 PluginInstance::getLatencySamples()
     return audioProc_->getLatencySamples();
 }
 
-Steinberg::tresult PluginInstance::setupProcessing(Steinberg::ProcessSetup& setup)
+Steinberg::tresult PluginInstance::setupProcessing(Steinberg::Vst::ProcessSetup& setup)
 {
     if (!audioProc_) return Steinberg::kNotImplemented;
     return audioProc_->setupProcessing(setup);
@@ -347,7 +347,7 @@ Steinberg::tresult PluginInstance::setProcessing(bool state)
     return audioProc_->setProcessing(state);
 }
 
-Steinberg::tresult PluginInstance::process(Steinberg::ProcessData& data)
+Steinberg::tresult PluginInstance::process(Steinberg::Vst::ProcessData& data)
 {
     if (!audioProc_) return Steinberg::kNotImplemented;
     return audioProc_->process(data);
@@ -398,7 +398,7 @@ Steinberg::tresult PluginInstance::setParamNormalized(
 }
 
 Steinberg::tresult PluginInstance::setComponentHandler(
-        Steinberg::IComponentHandler* handler)
+        Steinberg::Vst::IComponentHandler* handler)
 {
     if (!controller_) return Steinberg::kNotImplemented;
     return controller_->setComponentHandler(handler);

@@ -65,7 +65,7 @@ public:
     static std::unique_ptr<PluginInstance> create(
             Steinberg::IPluginFactory*  factory,
             const Steinberg::TUID       cid,
-            Steinberg::IHostApplication* hostApp);
+            Steinberg::Vst::IVstHostApplication* hostApp);
 
     ~PluginInstance();
 
@@ -87,7 +87,7 @@ public:
      * @param hostApp  IHostApplication to pass.
      * @return kResultOk if both succeed.
      */
-    Steinberg::tresult initialize(Steinberg::IHostApplication* hostApp);
+    Steinberg::tresult initialize(Steinberg::Vst::IVstHostApplication* hostApp);
 
     /**
      * @brief Call terminate() on both controller and component.
@@ -98,11 +98,11 @@ public:
     // ---- IComponent ---------------------------------------------------------
 
     Steinberg::tresult getControllerClassId(Steinberg::FUID& classId);
-    Steinberg::tresult setIoMode(Steinberg::IoMode mode);
-    Steinberg::int32   getBusCount(Steinberg::MediaType type, Steinberg::BusDirection dir);
-    Steinberg::tresult getBusInfo(Steinberg::MediaType type, Steinberg::BusDirection dir,
-                                  Steinberg::int32 index, Steinberg::BusInfo& bus);
-    Steinberg::tresult activateBus(Steinberg::MediaType type, Steinberg::BusDirection dir,
+    Steinberg::tresult setIoMode(Steinberg::Vst::IoMode mode);
+    Steinberg::int32   getBusCount(Steinberg::Vst::MediaType type, Steinberg::Vst::BusDirection dir);
+    Steinberg::tresult getBusInfo(Steinberg::Vst::MediaType type, Steinberg::Vst::BusDirection dir,
+                                  Steinberg::int32 index, Steinberg::Vst::BusInfo& bus);
+    Steinberg::tresult activateBus(Steinberg::Vst::MediaType type, Steinberg::Vst::BusDirection dir,
                                    Steinberg::int32 index, bool state);
     Steinberg::tresult setActive(bool state);
 
@@ -121,14 +121,14 @@ public:
     // ---- IAudioProcessor ----------------------------------------------------
 
     Steinberg::tresult setBusArrangements(const MsgRequestSetBusArrangements& msg);
-    Steinberg::tresult getBusArrangement(Steinberg::BusDirection dir,
+    Steinberg::tresult getBusArrangement(Steinberg::Vst::BusDirection dir,
                                          Steinberg::int32 busIndex,
-                                         Steinberg::SpeakerArrangement& arr);
+                                         Steinberg::Vst::SpeakerArrangement& arr);
     Steinberg::tresult canProcessSampleSize(Steinberg::int32 symbolicSize);
     Steinberg::uint32  getLatencySamples();
-    Steinberg::tresult setupProcessing(Steinberg::ProcessSetup& setup);
+    Steinberg::tresult setupProcessing(Steinberg::Vst::ProcessSetup& setup);
     Steinberg::tresult setProcessing(bool state);
-    Steinberg::tresult process(Steinberg::ProcessData& data);
+    Steinberg::tresult process(Steinberg::Vst::ProcessData& data);
     Steinberg::uint32  getTailSamples();
 
     // ---- IEditController ----------------------------------------------------
@@ -144,7 +144,7 @@ public:
      * @param handler  Caller-owned IComponentHandler (must outlive this object).
      * @return kResultOk on success.
      */
-    Steinberg::tresult setComponentHandler(Steinberg::IComponentHandler* handler);
+    Steinberg::tresult setComponentHandler(Steinberg::Vst::IComponentHandler* handler);
 
     // ---- IPlugView ----------------------------------------------------------
 
