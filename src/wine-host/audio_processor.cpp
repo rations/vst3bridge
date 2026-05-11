@@ -30,8 +30,8 @@ const int kMaxBuses = 16;
 
 AudioProcessor::AudioProcessor(AudioSharedMemoryHost* audio_shm,
                                 WineSocketClient* socket,
-                                Steinberg::IAudioProcessor* processor,
-                                Steinberg::IEditController* controller)
+                                Steinberg::Vst::IAudioProcessor* processor,
+                                Steinberg::Vst::IEditController* controller)
     : audio_shm_(audio_shm)
     , socket_(socket)
     , processor_(processor)
@@ -98,7 +98,7 @@ bool AudioProcessor::setupBuses(Steinberg::int32 input_bus_count, Steinberg::int
     for (Steinberg::int32 bus = 0; bus < input_bus_count; bus++) {
         SpeakerArrangement arrangement;
         if (processor_->getBusArrangement(kInput, bus, arrangement) != kResultTrue) {
-            arrangement = Steinberg::SpeakerArr::kStereo;  // Default to stereo
+            arrangement = Steinberg::Vst::SpeakerArr::kStereo;  // Default to stereo
         }
 
         Steinberg::int32 channel_count = SpeakerArr::getChannelCount(arrangement);
@@ -122,7 +122,7 @@ bool AudioProcessor::setupBuses(Steinberg::int32 input_bus_count, Steinberg::int
     for (int32 bus = 0; bus < output_bus_count; bus++) {
         SpeakerArrangement arrangement;
         if (processor_->getBusArrangement(kOutput, bus, arrangement) != kResultTrue) {
-            arrangement = Steinberg::SpeakerArr::kStereo;  // Default to stereo
+            arrangement = Steinberg::Vst::SpeakerArr::kStereo;  // Default to stereo
         }
 
         Steinberg::int32 channel_count = SpeakerArr::getChannelCount(arrangement);

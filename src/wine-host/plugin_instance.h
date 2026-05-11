@@ -35,6 +35,7 @@
 
 #include "pluginterfaces/base/ipluginbase.h"
 #include "pluginterfaces/vst/ivstcomponent.h"
+#include "pluginterfaces/vst/ivsthostapplication.h"
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
 #include "pluginterfaces/gui/iplugview.h"
@@ -65,7 +66,7 @@ public:
     static std::unique_ptr<PluginInstance> create(
             Steinberg::IPluginFactory*  factory,
             const Steinberg::TUID       cid,
-            Steinberg::Vst::IVstHostApplication* hostApp);
+            Steinberg::Vst::IHostApplication* hostApp);
 
     ~PluginInstance();
 
@@ -87,7 +88,7 @@ public:
      * @param hostApp  IHostApplication to pass.
      * @return kResultOk if both succeed.
      */
-    Steinberg::tresult initialize(Steinberg::Vst::IVstHostApplication* hostApp);
+    Steinberg::tresult initialize(Steinberg::Vst::IHostApplication* hostApp);
 
     /**
      * @brief Call terminate() on both controller and component.
@@ -135,7 +136,7 @@ public:
 
     Steinberg::tresult setControllerComponentState(const std::vector<uint8_t>& data);
     Steinberg::int32   getParameterCount();
-    Steinberg::tresult getParameterInfo(Steinberg::int32 index, Steinberg::ParameterInfo& info);
+    Steinberg::tresult getParameterInfo(Steinberg::int32 index, Steinberg::Vst::ParameterInfo& info);
     double             getParamNormalized(Steinberg::uint32 id);
     Steinberg::tresult setParamNormalized(Steinberg::uint32 id, double value);
 
@@ -174,22 +175,22 @@ public:
     // ---- Interface accessors (for AudioProcessor) ---------------------------
 
     /** @return Raw IAudioProcessor pointer (not addRef'd). */
-    Steinberg::IAudioProcessor* audioProcessor() const noexcept { return audioProc_; }
+    Steinberg::Vst::IAudioProcessor* audioProcessor() const noexcept { return audioProc_; }
 
     /** @return Raw IEditController pointer (not addRef'd). */
-    Steinberg::IEditController* editController() const noexcept { return controller_; }
+    Steinberg::Vst::IEditController* editController() const noexcept { return controller_; }
 
     /** @return Raw IComponent pointer (not addRef'd). */
-    Steinberg::IComponent* component() const noexcept { return component_; }
+    Steinberg::Vst::IComponent* component() const noexcept { return component_; }
 
 private:
     explicit PluginInstance(uint64_t id);
 
     uint64_t id_;
 
-    Steinberg::IComponent*       component_   = nullptr;
-    Steinberg::IAudioProcessor*  audioProc_   = nullptr;
-    Steinberg::IEditController*  controller_  = nullptr;
+    Steinberg::Vst::IComponent*      component_   = nullptr;
+    Steinberg::Vst::IAudioProcessor* audioProc_   = nullptr;
+    Steinberg::Vst::IEditController* controller_  = nullptr;
     Steinberg::IPlugView*        view_        = nullptr;
 
     /** True when component and controller are the same object. */

@@ -14,6 +14,7 @@
  */
 
 #include "component_handler.h"
+#include "wine_socket_client.h"
 #include "logger.h"
 
 namespace vst3bridge {
@@ -46,7 +47,7 @@ Steinberg::tresult PLUGIN_API ComponentHandler::queryInterface(
 {
     if (!obj) return Steinberg::kInvalidArgument;
 
-    const Steinberg::FUID requested(_iid);
+    Steinberg::FUID requested = Steinberg::FUID::fromTUID(_iid);
 
     if (requested == Steinberg::FUnknown::iid ||
         requested == Steinberg::Vst::IComponentHandler::iid ||
@@ -131,6 +132,14 @@ Steinberg::tresult PLUGIN_API ComponentHandler::restartComponent(Steinberg::int3
     return Steinberg::kResultOk;
 }
 
-IMPLEMENT_REFCOUNT(ComponentHandler)
+Steinberg::uint32 PLUGIN_API ComponentHandler::addRef() {
+    return static_cast<Steinberg::uint32>(++refCount_);
+}
+
+Steinberg::uint32 PLUGIN_API ComponentHandler::release() {
+    Steinberg::uint32 r = static_cast<Steinberg::uint32>(--refCount_);
+    if (r == 0) delete this;
+    return r;
+}
 
 } // namespace vst3bridge

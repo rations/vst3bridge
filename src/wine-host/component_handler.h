@@ -35,7 +35,9 @@
 #include "pluginterfaces/base/funknown.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
 
-namespace vst3bridge { class WineSocketClient; }
+namespace vst3bridge {
+
+class WineSocketClient;
 
 /**
  * @brief IComponentHandler that forwards all callbacks over the IPC socket.

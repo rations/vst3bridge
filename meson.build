@@ -71,6 +71,7 @@ common_sources = files(
     'third_party/vst3sdk/base/source/fstring.cpp',
     'third_party/vst3sdk/base/source/baseiids.cpp',
     'third_party/vst3sdk/base/source/fdebug.cpp',
+    'third_party/vst3sdk/base/thread/source/flock.cpp',
     'third_party/vst3sdk/pluginterfaces/base/funknown.cpp',
     'third_party/vst3sdk/pluginterfaces/base/coreiids.cpp',
     'third_party/vst3sdk/public.sdk/source/common/commoniids.cpp',
@@ -153,7 +154,6 @@ wine_common_sources = files(
     'src/common/shared_memory.cpp',
     'src/common/gui_events.cpp',
     'src/common/stream.cpp',
-    'src/common/socket.cpp',
 )
 
 # Wine host build with wineg++ (proper Wine compiler)
@@ -169,12 +169,36 @@ if winegpp.found()
             'third_party/vst3sdk/base/source/fstring.cpp',
             'third_party/vst3sdk/base/source/baseiids.cpp',
             'third_party/vst3sdk/base/source/fdebug.cpp',
+            'third_party/vst3sdk/base/thread/source/flock.cpp',
             'third_party/vst3sdk/pluginterfaces/base/funknown.cpp',
             'third_party/vst3sdk/pluginterfaces/base/coreiids.cpp',
             'third_party/vst3sdk/public.sdk/source/common/commoniids.cpp',
             'third_party/vst3sdk/public.sdk/source/vst/vstinitiids.cpp',
         ),
-        command  : [winegpp, '@INPUT@', '-o', '@OUTPUT@', '-std=c++17', '-I/home/rations/vst3bridge/src/common', '-I/home/rations/vst3bridge/third_party/vst3sdk', '-I/home/rations/vst3bridge/third_party/vst3sdk/pluginterfaces', '-I/home/rations/vst3bridge/third_party/vst3sdk/base', '-I/home/rations/vst3bridge/third_party/vst3sdk/public.sdk', '-I/home/rations/vst3bridge/src/wine-host', '-fvisibility=hidden', '-fvisibility-inlines-hidden', '-fno-strict-aliasing', '-msse2', '-DNDEBUG', '-DBUILDING_WINE_HOST', '-DSMTG_OS_WINDOWS', '-DSMTG_PLATFORM_64', '-DVST_VERSION=0x030700', '-DNOMINMAX', '-D_WIN32_WINNT=0x0601', '-DSMTG_DEFINE_IID', '-Wno-unknown-pragmas', '-Wno-pedantic', '-Wno-error=format', '-Wno-error=class-memaccess', '-mwindows', '-lstdc++', '-lm', '-lws2_32', '-lgdi32', '-luser32', '-lkernel32', '-luuid', '-lole32', '-lshell32', '-lrt'],
+        command  : [winegpp, '@INPUT@', '-o', '@OUTPUT@',
+            '-std=c++17',
+            # Force-include the winsock2 prelude before every TU to avoid
+            # glibc 2.38+ sys/select.h conflict with winsock2's fd_set.
+            '-include', meson.project_source_root() / 'src' / 'wine-host' / 'wine_win32_prelude.h',
+            # Wine Windows API headers (vendored from libwine-dev, path matches wineg++ search layout)
+            '-isystem' + meson.project_source_root() / 'third_party' / 'wine-windows' / 'include',
+            '-I' + meson.project_source_root() / 'src' / 'common',
+            '-I' + meson.project_source_root() / 'src' / 'wine-host',
+            '-I' + meson.project_source_root() / 'third_party' / 'vst3sdk',
+            '-I' + meson.project_source_root() / 'third_party' / 'vst3sdk' / 'pluginterfaces',
+            '-I' + meson.project_source_root() / 'third_party' / 'vst3sdk' / 'base',
+            '-I' + meson.project_source_root() / 'third_party' / 'vst3sdk' / 'public.sdk',
+            '-fvisibility=hidden', '-fvisibility-inlines-hidden',
+            '-fno-strict-aliasing', '-msse2',
+            '-DNDEBUG', '-DBUILDING_WINE_HOST', '-DSMTG_OS_WINDOWS',
+            '-DSMTG_PLATFORM_64', '-DVST_VERSION=0x030700',
+            '-DWIN32_LEAN_AND_MEAN', '-DNOMINMAX',
+            '-D_WIN32_WINNT=0x0601', '-DSMTG_DEFINE_IID',
+            '-Wno-unknown-pragmas', '-Wno-pedantic',
+            '-Wno-error=format', '-Wno-error=class-memaccess',
+            '-mwindows',
+            '-lstdc++', '-lm', '-lws2_32', '-lgdi32', '-luser32',
+            '-lkernel32', '-luuid', '-lole32', '-lshell32', '-lrt'],
         build_by_default : true,
         install  : false,
     )
@@ -183,8 +207,10 @@ else
 endif
 
 # ---------------------------------------------------------------------------
-# Unit tests (Phase 9)
+# Unit tests (optional, requires gtest)
 # ---------------------------------------------------------------------------
+
+gtest_dep = dependency('gtest', required : false)
 
 if get_option('tests')
     test_sources = files(
@@ -194,28 +220,6 @@ if get_option('tests')
 
     test_exe = executable(
         'vst3bridge-tests',
-        test_sources,
-        common_sources,
-        include_directories : inc_common,
-        dependencies        : [gtest_dep, thread_dep],
-        cpp_args            : native_cpp_args + ['-lgtest_main'],
-        link_args           : ['-lrt'],
-    )
-    test('unit-tests', test_exe)
-endif
-
-# ---------------------------------------------------------------------------
-# Unit tests (optional, requires gtest)
-# ---------------------------------------------------------------------------
-
-gtest_dep = dependency('gtest', required : false)
-if gtest_dep.found() and false
-    test_sources = files(
-        'tests/test_protocol.cpp',
-        'tests/test_shared_memory.cpp',
-    )
-
-    test_exe = executable('vst3bridge-tests',
         test_sources,
         common_sources,
         include_directories : inc_common,

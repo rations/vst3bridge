@@ -57,13 +57,13 @@ Steinberg::tresult PLUGIN_API HostApplication::queryInterface(
 {
     if (!obj) return Steinberg::kInvalidArgument;
 
-    Steinberg::FUID requested(_iid);
+    Steinberg::FUID requested = Steinberg::FUID::fromTUID(_iid);
 
     if (requested == Steinberg::FUnknown::iid ||
-        requested == Steinberg::Vst::IVstHostApplication::iid ||
+        requested == Steinberg::Vst::IHostApplication::iid ||
         requested == HostApplication::iid)
     {
-        *obj = static_cast<Steinberg::Vst::IVstHostApplication*>(this);
+        *obj = static_cast<Steinberg::Vst::IHostApplication*>(this);
         addRef();
         return Steinberg::kResultOk;
     }
@@ -76,7 +76,7 @@ Steinberg::tresult PLUGIN_API HostApplication::queryInterface(
 // IHostApplication
 // ============================================================================
 
-Steinberg::tresult PLUGIN_API HostApplication::getName(Steinberg::String128 name)
+Steinberg::tresult PLUGIN_API HostApplication::getName(Steinberg::Vst::String128 name)
 {
     if (!name) return Steinberg::kInvalidArgument;
 

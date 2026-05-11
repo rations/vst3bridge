@@ -61,7 +61,7 @@
 #include "gui_event_receiver.h"
 #include "ipc_host.h"
 
-#pragma comment(lib, "ws2_32.lib")
+// ws2_32 is linked via -lws2_32 in meson.build
 
 namespace vst3bridge {
 
@@ -742,24 +742,24 @@ private:
                     // Fill bus channel counts
                     ready.input_bus_count  = static_cast<uint32_t>(
                         pluginInstance_->getBusCount(
-                            Steinberg::kAudio, Steinberg::kInput));
+                            Steinberg::Vst::kAudio, Steinberg::Vst::kInput));
                     ready.output_bus_count = static_cast<uint32_t>(
                         pluginInstance_->getBusCount(
-                            Steinberg::kAudio, Steinberg::kOutput));
+                            Steinberg::Vst::kAudio, Steinberg::Vst::kOutput));
 
                     for (uint32_t i = 0; i < ready.input_bus_count && i < 8; ++i) {
                         Steinberg::Vst::SpeakerArrangement arr = 0;
                         pluginInstance_->getBusArrangement(
-                            Steinberg::kInput, i, arr);
+                            Steinberg::Vst::kInput, i, arr);
                         ready.input_bus_channels[i] = static_cast<uint32_t>(
-                            Steinberg::SpeakerArr::getChannelCount(arr));
+                            Steinberg::Vst::SpeakerArr::getChannelCount(arr));
                     }
                     for (uint32_t i = 0; i < ready.output_bus_count && i < 8; ++i) {
                         Steinberg::Vst::SpeakerArrangement arr = 0;
                         pluginInstance_->getBusArrangement(
-                            Steinberg::kOutput, i, arr);
+                            Steinberg::Vst::kOutput, i, arr);
                         ready.output_bus_channels[i] = static_cast<uint32_t>(
-                            Steinberg::SpeakerArr::getChannelCount(arr));
+                            Steinberg::Vst::SpeakerArr::getChannelCount(arr));
                     }
                 }
 
@@ -793,7 +793,7 @@ private:
         for (uint32_t i = 0; i < numChanges; ++i) {
             const ParamChangePoint& pc = changes[i];
             int32_t index = 0;
-            Steinberg::IParamValueQueue* queue = currentParamChanges_.addParameterData(pc.param_id, index);
+            Steinberg::Vst::IParamValueQueue* queue = currentParamChanges_.addParameterData(pc.param_id, index);
             if (queue) {
                 queue->addPoint(pc.sample_offset, pc.value, index);
             }
@@ -854,8 +854,8 @@ private:
         }
 
         Steinberg::Vst::ProcessData data{};
-        data.processMode            = Steinberg::kRealtime;
-        data.symbolicSampleSize     = Steinberg::kSample32;
+        data.processMode            = Steinberg::Vst::kRealtime;
+        data.symbolicSampleSize     = Steinberg::Vst::kSample32;
         data.numSamples             = static_cast<Steinberg::int32>(numSamples);
         data.numInputs              = static_cast<Steinberg::int32>(nIn);
         data.numOutputs             = static_cast<Steinberg::int32>(nOut);
@@ -1224,8 +1224,8 @@ private:
     std::string                       frameShmName_;
 
     // Audio processing scratch buffers (reused across calls)
-    std::vector<Steinberg::AudioBusBuffers>   inputBuses_;
-    std::vector<Steinberg::AudioBusBuffers>   outputBuses_;
+    std::vector<Steinberg::Vst::AudioBusBuffers>   inputBuses_;
+    std::vector<Steinberg::Vst::AudioBusBuffers>   outputBuses_;
     std::vector<std::vector<float*>>          inputPtrs_;
     std::vector<std::vector<float*>>          outputPtrs_;
 

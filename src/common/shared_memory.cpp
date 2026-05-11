@@ -13,19 +13,26 @@
  * @brief POSIX shared memory wrappers for audio and GUI frame exchange.
  */
 
+// winsock2.h MUST be the very first include in the Wine host build path.
+// glibc 2.38+ stdlib.h → sys/types.h → sys/select.h chain defines FD_CLR as
+// an error sentinel before winsock2.h can claim fd_set. Any project header
+// included before this block (e.g. shared_memory.h → protocol.h → <string>)
+// would trigger that chain.
+#ifdef BUILDING_WINE_HOST
+#include <winsock2.h>
+#include <windows.h>
+#endif
+
 #include "shared_memory.h"
 #include "logger.h"
 
 #ifdef BUILDING_WINE_HOST
-// Wine host: Wine implements posix shm functions natively
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-// IMPORTANT: DO NOT include sys/socket.h anywhere in Wine host code!
-#include <windows.h>
 #elif defined(_WIN32)
-#include <windows.h>
+// nothing extra
 #else
 // Native Linux build
 #include <sys/mman.h>

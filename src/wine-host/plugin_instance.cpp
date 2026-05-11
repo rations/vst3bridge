@@ -78,7 +78,7 @@ PluginInstance::~PluginInstance() {
 std::unique_ptr<PluginInstance> PluginInstance::create(
         Steinberg::IPluginFactory*   factory,
         const Steinberg::TUID        cid,
-        Steinberg::Vst::IVstHostApplication* hostApp)
+        Steinberg::Vst::IHostApplication* hostApp)
 {
     if (!factory) {
         LOG_ERROR("PluginInstance::create(): factory is null");
@@ -91,11 +91,11 @@ std::unique_ptr<PluginInstance> PluginInstance::create(
     // ---- 1. Create component ------------------------------------------------
 
     Steinberg::TUID iComponentId;
-    Steinberg::IComponent::iid.toTUID(iComponentId);
+    Steinberg::Vst::IComponent::iid.toTUID(iComponentId);
 
     void* rawComponent = nullptr;
     Steinberg::tresult res = factory->createInstance(
-            const_cast<char*>(cid), iComponentId, &rawComponent);
+            cid, iComponentId, &rawComponent);
 
     if (res != Steinberg::kResultOk || !rawComponent) {
         LOG_ERROR("PluginInstance: createInstance() failed (result {})",
@@ -103,17 +103,17 @@ std::unique_ptr<PluginInstance> PluginInstance::create(
         return nullptr;
     }
 
-    inst->component_ = static_cast<Steinberg::IComponent*>(rawComponent);
+    inst->component_ = static_cast<Steinberg::Vst::IComponent*>(rawComponent);
     // Ownership transferred; do NOT addRef here.
 
     // ---- 2. Query IAudioProcessor from the component -----------------------
 
     {
         Steinberg::TUID apId;
-        Steinberg::IAudioProcessor::iid.toTUID(apId);
+        Steinberg::Vst::IAudioProcessor::iid.toTUID(apId);
         void* ptr = nullptr;
         if (inst->component_->queryInterface(apId, &ptr) == Steinberg::kResultOk) {
-            inst->audioProc_ = static_cast<Steinberg::IAudioProcessor*>(ptr);
+            inst->audioProc_ = static_cast<Steinberg::Vst::IAudioProcessor*>(ptr);
             LOG_DEBUG("PluginInstance: IAudioProcessor obtained");
         } else {
             LOG_WARN("PluginInstance: IAudioProcessor not available (instrument only?)");
@@ -125,10 +125,10 @@ std::unique_ptr<PluginInstance> PluginInstance::create(
     // First try: controller is implemented by the same object.
     {
         Steinberg::TUID ecId;
-        Steinberg::IEditController::iid.toTUID(ecId);
+        Steinberg::Vst::IEditController::iid.toTUID(ecId);
         void* ptr = nullptr;
         if (inst->component_->queryInterface(ecId, &ptr) == Steinberg::kResultOk) {
-            inst->controller_ = static_cast<Steinberg::IEditController*>(ptr);
+            inst->controller_ = static_cast<Steinberg::Vst::IEditController*>(ptr);
             inst->singleComponent_ = true;
             LOG_DEBUG("PluginInstance: single component/controller");
         }
@@ -136,20 +136,17 @@ std::unique_ptr<PluginInstance> PluginInstance::create(
 
     // Second try: separate controller class returned by getControllerClassId().
     if (!inst->controller_) {
-        Steinberg::FUID controllerClassId;
         Steinberg::TUID controllerClassTuid;
         Steinberg::TUID ecId;
-        Steinberg::IEditController::iid.toTUID(ecId);
+        Steinberg::Vst::IEditController::iid.toTUID(ecId);
 
-        if (inst->component_->getControllerClassId(&controllerClassId) == Steinberg::kResultOk) {
-            controllerClassId.toTUID(controllerClassTuid);
-
+        if (inst->component_->getControllerClassId(controllerClassTuid) == Steinberg::kResultOk) {
             void* rawCtrl = nullptr;
             Steinberg::tresult cres = factory->createInstance(
                     controllerClassTuid, ecId, &rawCtrl);
 
             if (cres == Steinberg::kResultOk && rawCtrl) {
-                inst->controller_ = static_cast<Steinberg::IEditController*>(rawCtrl);
+                inst->controller_ = static_cast<Steinberg::Vst::IEditController*>(rawCtrl);
                 LOG_DEBUG("PluginInstance: separate controller instance created");
             } else {
                 LOG_WARN("PluginInstance: could not create separate controller "
@@ -189,7 +186,7 @@ std::unique_ptr<PluginInstance> PluginInstance::create(
 // IPluginBase
 // ============================================================================
 
-Steinberg::tresult PluginInstance::initialize(Steinberg::Vst::IVstHostApplication* hostApp)
+Steinberg::tresult PluginInstance::initialize(Steinberg::Vst::IHostApplication* hostApp)
 {
     if (!component_) return Steinberg::kInternalError;
 
@@ -223,7 +220,11 @@ Steinberg::tresult PluginInstance::terminate()
 Steinberg::tresult PluginInstance::getControllerClassId(Steinberg::FUID& classId)
 {
     if (!component_) return Steinberg::kInternalError;
-    return component_->getControllerClassId(&classId);
+    Steinberg::TUID tuid;
+    Steinberg::tresult res = component_->getControllerClassId(tuid);
+    if (res == Steinberg::kResultOk)
+        classId = Steinberg::FUID::fromTUID(tuid);
+    return res;
 }
 
 Steinberg::tresult PluginInstance::setIoMode(Steinberg::Vst::IoMode mode)
@@ -378,7 +379,7 @@ Steinberg::int32 PluginInstance::getParameterCount()
 }
 
 Steinberg::tresult PluginInstance::getParameterInfo(
-        Steinberg::int32 index, Steinberg::ParameterInfo& info)
+        Steinberg::int32 index, Steinberg::Vst::ParameterInfo& info)
 {
     if (!controller_) return Steinberg::kNotImplemented;
     return controller_->getParameterInfo(index, info);
@@ -422,7 +423,7 @@ bool PluginInstance::createView()
         view_ = nullptr;
     }
 
-    view_ = controller_->createView(Steinberg::ViewType::kEditor);
+    view_ = controller_->createView(Steinberg::Vst::ViewType::kEditor);
     if (!view_) {
         LOG_WARN("PluginInstance::createView(): controller returned null view "
                  "(plugin may not have a GUI)");
@@ -438,7 +439,7 @@ Steinberg::tresult PluginInstance::attachView(HWND hwnd)
     if (!view_) return Steinberg::kInternalError;
     return view_->attached(
         static_cast<void*>(hwnd),
-        Steinberg::PlatformType::kHWND);
+        Steinberg::kPlatformTypeHWND);
 }
 
 Steinberg::tresult PluginInstance::removeView()

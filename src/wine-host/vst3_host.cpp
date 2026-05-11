@@ -73,12 +73,12 @@ bool VST3Host::loadPlugin(const wchar_t* path) {
 
     // ---- 3. Get the GetPluginFactory entry point ----------------------------
 
-    auto getFactoryProc = reinterpret_cast<Steinberg::GetPluginFactoryProc>(
-        GetProcAddress(module_, Steinberg::kGetPluginFactorySymbol));
+    using GetFactoryProc = Steinberg::IPluginFactory* (PLUGIN_API*)();
+    auto getFactoryProc = reinterpret_cast<GetFactoryProc>(
+        GetProcAddress(module_, "GetPluginFactory"));
 
     if (!getFactoryProc) {
-        LOG_ERROR("VST3Host: '{}' symbol not found in DLL",
-                  Steinberg::kGetPluginFactorySymbol);
+        LOG_ERROR("VST3Host: 'GetPluginFactory' symbol not found in DLL");
         unloadPlugin();
         return false;
     }

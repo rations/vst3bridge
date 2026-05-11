@@ -28,7 +28,7 @@ namespace vst3bridge {
 /**
  * @brief Concrete IHostApplication for the VST3 Bridge Wine host.
  */
-class HostApplication final : public Steinberg::Vst::IVstHostApplication {
+class HostApplication final : public Steinberg::Vst::IHostApplication {
 public:
     HostApplication();
 
@@ -38,7 +38,7 @@ public:
 
     // ---- IHostApplication --------------------------------------------------
 
-    Steinberg::tresult PLUGIN_API getName(Steinberg::String128 name) override;
+    Steinberg::tresult PLUGIN_API getName(Steinberg::Vst::String128 name) override;
 
     Steinberg::tresult PLUGIN_API createInstance(
             Steinberg::TUID  cid,

@@ -19,6 +19,7 @@
  */
 
 #include "gui_event_receiver.h"
+#include "wine_socket_client.h"
 #include <cstring>
 #include <iostream>
 

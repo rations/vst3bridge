@@ -27,12 +27,13 @@
 #include <atomic>
 #include <memory>
 
-namespace vst3bridge { class WineSocketClient; }
-using namespace vst3bridge;
+namespace vst3bridge {
+
+class WineSocketClient;
 
 /**
  * @brief Receives GUI events from native side and forwards to plugin
- * 
+ *
  * This class runs in the Wine host process and receives forwarded
  * GUI events via IPC, then injects them into the plugin's window.
  */

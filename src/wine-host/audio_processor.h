@@ -22,9 +22,16 @@
 
 #include "audio_shm_host.h"
 #include "parameter_changes.h"
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <winsock2.h>
 #include <windows.h>
+#include "pluginterfaces/vst/ivstaudioprocessor.h"
+#include "pluginterfaces/vst/ivsteditcontroller.h"
 #include <cstring>
 #include <iostream>
+#include <atomic>
 #include <thread>
 #include "wine_socket_client.h"
 
@@ -49,8 +56,8 @@ public:
      */
     AudioProcessor(AudioSharedMemoryHost* audio_shm,
                     WineSocketClient* socket,
-                    Steinberg::IAudioProcessor* processor,
-                    Steinberg::IEditController* controller);
+                    Steinberg::Vst::IAudioProcessor* processor,
+                    Steinberg::Vst::IEditController* controller);
 
     ~AudioProcessor();
 
@@ -110,8 +117,8 @@ private:
 
     AudioSharedMemoryHost* audio_shm_;
     WineSocketClient* socket_;
-    Steinberg::IAudioProcessor* processor_;
-    Steinberg::IEditController* controller_;
+    Steinberg::Vst::IAudioProcessor* processor_;
+    Steinberg::Vst::IEditController* controller_;
 
     std::thread processing_thread_;
     std::atomic<bool> running_{false};
@@ -119,8 +126,8 @@ private:
 
     // VST3 processing data
     Steinberg::Vst::ProcessData process_data_;
-    std::vector<Steinberg::AudioBusBuffers> input_buses_;
-    std::vector<Steinberg::AudioBusBuffers> output_buses_;
+    std::vector<Steinberg::Vst::AudioBusBuffers> input_buses_;
+    std::vector<Steinberg::Vst::AudioBusBuffers> output_buses_;
     std::vector<std::vector<float*>> input_channel_ptrs_;
     std::vector<std::vector<float*>> output_channel_ptrs_;
     
