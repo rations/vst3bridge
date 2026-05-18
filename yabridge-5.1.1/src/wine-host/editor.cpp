@@ -481,17 +481,28 @@ Editor::Editor(MainContext& main_context,
                         const LPARAM screen_coords =
                             MAKELPARAM(pt_screen.x, pt_screen.y);
 
-                        // During a drag (LBUTTONDOWN held), lock the target to
-                        // the window that received the initial press.
-                        // ChildWindowFromPointEx uses only geometric rectangle
-                        // checks — no cross-thread or cross-process messaging.
-                        HWND target =
-                            drag_target
-                                ? drag_target
-                                : ChildWindowFromPointEx(
-                                      win32_window_.handle_, pt,
-                                      CWP_SKIPTRANSPARENT | CWP_SKIPINVISIBLE);
-                        if (!target) target = win32_window_.handle_;
+                        // For LBUTTONDOWN always do a fresh hit-test and
+                        // reset any stale drag state.  For MOUSEMOVE/LBUTTONUP
+                        // while a drag is active, lock to the window that
+                        // received the initial press so the plugin sees events
+                        // even when the mouse leaves the control's rectangle.
+                        // ChildWindowFromPointEx is geometric-only — no
+                        // cross-thread or cross-process messaging.
+                        HWND target;
+                        if (input_ev.type == 2) {
+                            drag_target = nullptr;
+                            target = ChildWindowFromPointEx(
+                                win32_window_.handle_, pt,
+                                CWP_SKIPTRANSPARENT | CWP_SKIPINVISIBLE);
+                            if (!target) target = win32_window_.handle_;
+                        } else if (drag_target) {
+                            target = drag_target;
+                        } else {
+                            target = ChildWindowFromPointEx(
+                                win32_window_.handle_, pt,
+                                CWP_SKIPTRANSPARENT | CWP_SKIPINVISIBLE);
+                            if (!target) target = win32_window_.handle_;
+                        }
 
                         // Translate pt to target's client space.
                         if (target != win32_window_.handle_) {

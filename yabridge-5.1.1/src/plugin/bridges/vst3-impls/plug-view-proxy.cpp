@@ -168,9 +168,13 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
             xcb_setup_roots_iterator(xcb_get_setup(render_x11_)).data;
 
         render_window_ = xcb_generate_id(render_x11_);
+        // XCB_COPY_FROM_PARENT for both depth and visual so the child window
+        // inherits the parent's depth/visual. Reaper's FX panels may be
+        // depth-32 ARGB; using root_visual (depth-24) here causes BadMatch and
+        // silently drops the window-creation request.
         xcb_create_window(render_x11_, XCB_COPY_FROM_PARENT, render_window_,
                           render_parent_xid_, 0, 0, 1, 1, 0,
-                          XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual,
+                          XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_COPY_FROM_PARENT,
                           XCB_CW_EVENT_MASK, &render_event_mask_);
         xcb_map_window(render_x11_, render_window_);
         xcb_flush(render_x11_);
@@ -199,10 +203,26 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
 
         render_thread_ = std::thread([this]() {
             while (render_running_.load(std::memory_order_relaxed)) {
-                // Poll XCB input events and forward to Wine via SHM ring.
+                // Poll XCB events. response_type==0 means a protocol error
+                // (e.g. BadDrawable after render_window_ is destroyed).
+                // xcb_connection_has_error() only catches fatal socket-level
+                // failures, not protocol errors, so we must check here.
+                bool need_reconnect = false;
                 while (xcb_generic_event_t* raw_ev =
                            xcb_poll_for_event(render_x11_)) {
                     const uint8_t ev_type = raw_ev->response_type & 0x7f;
+                    if (ev_type == 0) {
+                        // Protocol error reply.
+                        const auto* err =
+                            reinterpret_cast<xcb_generic_error_t*>(raw_ev);
+                        // BadWindow=3, BadMatch=8, BadDrawable=9
+                        if (err->error_code == 3 || err->error_code == 8 ||
+                            err->error_code == 9) {
+                            need_reconnect = true;
+                        }
+                        free(raw_ev);
+                        continue;
+                    }
                     yabridge::FrameSharedMemory::InputEvent input_ev{};
                     if (ev_type == XCB_BUTTON_PRESS ||
                         ev_type == XCB_BUTTON_RELEASE) {
@@ -242,6 +262,11 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
                     free(raw_ev);
                 }
 
+                if (need_reconnect) {
+                    render_reconnect();
+                    continue;
+                }
+
                 uint32_t w = 0, h = 0, stride = 0;
                 const uint8_t* px = render_shm_->beginRead(w, h, stride);
                 if (px && w > 0 && h > 0) {
@@ -261,15 +286,6 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
                                   stride * h, px);
                     xcb_flush(render_x11_);
                     render_shm_->endRead();
-
-                    // If the connection is dead (parent window was destroyed
-                    // when the DAW restructured its FX window layout), try to
-                    // reconnect and recreate our render window.
-                    if (xcb_connection_has_error(render_x11_)) {
-                        using namespace std::chrono_literals;
-                        std::this_thread::sleep_for(100ms);
-                        render_reconnect();
-                    }
                 } else {
                     using namespace std::chrono_literals;
                     std::this_thread::sleep_for(8ms);
@@ -306,7 +322,7 @@ bool Vst3PlugViewProxyImpl::render_reconnect() noexcept {
     render_window_ = xcb_generate_id(render_x11_);
     xcb_create_window(render_x11_, XCB_COPY_FROM_PARENT, render_window_,
                       render_parent_xid_, 0, 0, 1, 1, 0,
-                      XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual,
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_COPY_FROM_PARENT,
                       XCB_CW_EVENT_MASK, &render_event_mask_);
     xcb_map_window(render_x11_, render_window_);
     xcb_flush(render_x11_);
