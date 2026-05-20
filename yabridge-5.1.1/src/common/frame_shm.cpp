@@ -28,8 +28,9 @@ std::unique_ptr<FrameSharedMemory> FrameSharedMemory::create(uint32_t max_w,
     auto self = std::unique_ptr<FrameSharedMemory>(new FrameSharedMemory());
 
     char buf[64];
+    static std::atomic<uint32_t> shm_seq{0};
     snprintf(buf, sizeof(buf), "/yabridge_frame_%d_%u", (int)getpid(),
-             (unsigned)rand());
+             shm_seq.fetch_add(1u, std::memory_order_relaxed));
     self->name_ = buf;
 
     self->pixel_slot_size_ =

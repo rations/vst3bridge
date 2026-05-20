@@ -121,6 +121,11 @@ constexpr uint32_t xembed_focus_first = 1;
  */
 static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
 
+// Custom message: capture thread SendMessage's this to win32_window_ to inject
+// WM_SETFOCUS directly into the plugin WndProc (bypassing x11drv's focus gate)
+// before WM_LBUTTONDOWN is queued. SendMessage blocks until the handler returns.
+static constexpr UINT WM_GDI_RESTORE_FOCUS = WM_APP + 42;
+
 /**
  * Find the the ancestors for the given window. This returns a list of window
  * IDs that starts with `starting_at`, and then iteratively contains the parent
@@ -646,6 +651,16 @@ Editor::Editor(MainContext& main_context,
                             case 2:
                                 drag_target = target;
                                 {
+                                    // Inject WM_SETFOCUS directly via
+                                    // WM_GDI_RESTORE_FOCUS (runs on main
+                                    // thread via SendMessage), then queue
+                                    // WM_LBUTTONDOWN. No xcb_set_input_focus:
+                                    // fighting another Wine process for X11
+                                    // focus is a race we cannot win.
+                                    SendMessage(win32_window_.handle_,
+                                                WM_GDI_RESTORE_FOCUS,
+                                                (WPARAM)target, 0);
+
                                     const BOOL ok = PostMessage(
                                         target, WM_LBUTTONDOWN, MK_LBUTTON,
                                         client_coords);
@@ -1541,6 +1556,30 @@ LRESULT CALLBACK window_proc(HWND handle,
 
             WINDOWPOS* info = reinterpret_cast<WINDOWPOS*>(lParam);
             info->flags |= SWP_DEFERERASE | SWP_NOCOPYBITS;
+        } break;
+        case WM_GDI_RESTORE_FOCUS: {
+            // SendMessage'd from the GDI capture thread so this runs
+            // synchronously on the main thread before WM_LBUTTONDOWN is
+            // queued. WM_SETFOCUS alone does not restore VSTGUI's isActive_
+            // flag after Wine x11drv sends WM_ACTIVATE(WA_INACTIVE) when
+            // another plugin's gdi_hide_container_ maps at (0,0). Send the
+            // full sequence: WM_NCACTIVATE → WM_ACTIVATE(WA_CLICKACTIVE) →
+            // WM_SETFOCUS, all synchronous before WM_LBUTTONDOWN is queued.
+            {
+                HWND focus_target = reinterpret_cast<HWND>(wParam);
+                HWND plugin_window = GetWindow(handle, GW_CHILD);
+                if (!focus_target) focus_target = plugin_window;
+                if (plugin_window) {
+                    SendMessage(plugin_window, WM_NCACTIVATE, TRUE, 0);
+                    SendMessage(plugin_window, WM_ACTIVATE,
+                                MAKEWPARAM(WA_CLICKACTIVE, 0), 0);
+                }
+                if (focus_target)
+                    SendMessage(focus_target, WM_SETFOCUS, 0, 0);
+                std::cerr << "[yabridge gdi] SetFocus target=" << focus_target
+                          << " GetFocus=" << GetFocus() << "\n";
+            }
+            return 0;
         } break;
         case WM_TIMER: {
             auto editor = reinterpret_cast<Editor*>(

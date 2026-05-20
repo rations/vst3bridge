@@ -259,6 +259,39 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
                                 raw_ev);
                         input_ev.x = static_cast<int16_t>(bev->event_x);
                         input_ev.y = static_cast<int16_t>(bev->event_y);
+                        // On real button press/release (not scroll): manage
+                        // X11 pointer grab and redirect keyboard focus to
+                        // gdi_hide_container_ so Wine x11drv delivers
+                        // WM_ACTIVATE(WA_ACTIVE) to the plugin via its own
+                        // focus machinery, restoring VSTGUI's isActive_ flag.
+                        if (bev->detail >= 1 && bev->detail <= 3) {
+                            if (ev_type == XCB_BUTTON_PRESS) {
+                                xcb_grab_pointer(
+                                    render_x11_, 0, render_window_,
+                                    XCB_EVENT_MASK_BUTTON_PRESS |
+                                        XCB_EVENT_MASK_BUTTON_RELEASE |
+                                        XCB_EVENT_MASK_POINTER_MOTION,
+                                    XCB_GRAB_MODE_ASYNC,
+                                    XCB_GRAB_MODE_ASYNC,
+                                    XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+                                const xcb_window_t cxid =
+                                    static_cast<xcb_window_t>(
+                                        render_shm_->container_xid());
+                                if (cxid)
+                                    xcb_set_input_focus(
+                                        render_x11_,
+                                        XCB_INPUT_FOCUS_PARENT,
+                                        cxid, XCB_CURRENT_TIME);
+                                xcb_flush(render_x11_);
+                                std::cerr << "[yabridge native " << diag_parent
+                                          << "] grab+focus cxid="
+                                          << cxid << "\n";
+                            } else {
+                                xcb_ungrab_pointer(render_x11_,
+                                                   XCB_CURRENT_TIME);
+                                xcb_flush(render_x11_);
+                            }
+                        }
                         if (bev->detail == 4 && ev_type == XCB_BUTTON_PRESS) {
                             input_ev.type = 8;
                             input_ev.wheel_delta = 120;
